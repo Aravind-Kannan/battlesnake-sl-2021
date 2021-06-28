@@ -1,4 +1,4 @@
-def getNext(current_head, direction):
+def get_next(current_head, direction):
     """
     :return the co-ordinate of head as per :param direction
     """
@@ -25,37 +25,85 @@ def avoid_walls(future_head, height, width):
     return result
 
 
-def avoid_snakes(future_head, snakeBodies):
-    for snake in snakeBodies:
+def avoid_snakes(future_head, snake_bodies):
+    for snake in snake_bodies:
         if future_head in snake["body"][:-1]:
             return False
     return True
 
 
-def get_safe_moves(possible_moves, body, board, squadMates=None, mySnake=None):
+def get_all_moves(coord):
+    return [
+        {'x': coord['x'], 'y': coord['y'] + 1},
+        {'x': coord['x'], 'y': coord['y'] - 1},
+        {'x': coord['x'] + 1, 'y': coord['y']},
+        {'x': coord['x'] - 1, 'y': coord['y']}
+    ]
+
+
+def avoid_consumption(future_head, snake_bodies, my_snake):
+    if len(snake_bodies) < 2:
+        return True
+    my_length = my_snake["length"]
+    for snake in snake_bodies:
+        if snake == my_snake:
+            continue
+        if future_head in get_all_moves(snake["head"]) and future_head not in snake["body"][1:-1] and \
+                my_length <= snake["length"]:
+            return False
+    return True
+
+
+def avoid_hazards(future_head, hazards):
+    return future_head not in hazards
+
+
+def at_wall(coord, board):
+    return coord['x'] <= 0 or coord['y'] <= 0 or coord['x'] >= board['width'] - 1 or coord['y'] >= board['height'] - 1
+
+
+def get_minimum_moves(start_coord, targets):
+    moves = []
+    for coord in targets:
+        moves.append(abs(coord['x'] - start_coord['x']) + abs(coord['y'] - start_coord['y']))
+    return moves
+
+
+def get_safe_moves(possible_moves, body, board, squad_mates=None, my_snake=None):
     safe_moves = []
 
     for guess in possible_moves:
-        guess_coord = getNext(body[0], guess)
+        guess_coord = get_next(body[0], guess)
         if avoid_walls(guess_coord, board["height"], board["width"]) and avoid_snakes(guess_coord, board["snakes"]):
             safe_moves.append(guess)
         elif len(body) > 1 and guess_coord == body[-1] and guess_coord not in body[:-1]:
             safe_moves.append(guess)
-        # if squadMates and mySnake:
-        #     for snake in squadMates:
-        #         if guess_coord in snake["body"][1:] and guess_coord not in mySnake["body"][:-1]:
+        # if squad_mates and my_snake:
+        #     for snake in squad_mates:
+        #         if guess_coord in snake["body"][1:] and guess_coord not in my_snake["body"][:-1]:
         #             safe_moves.append(guess)
     return safe_moves
+
+
+def get_future_head_positions(body, turns, board):
+    turn = 0
+    explores = {}
+    explores[0] = [body[0]]
+    while turn < turns:
+        turn += 1
+        explores[turn] = []
+        for explore in explores[turn - 1]:
+            next_path = get_safe_moves(['left', 'right', 'up', 'down'], [explore], board)
+            for path in next_path:
+                explores[turn].append(get_next(explore, path))
+
+    return explores[turns]
 
 
 # def avoid_body(future_head, body):
 #     if future_head in body:
 #         return False
 #     return True
-#
-#
-# def avoidHazards(future_head, hazards):
-#     return future_head not in hazards
 #
 #
 # def getClosestEnemy(headCoord, snakes):
@@ -72,23 +120,3 @@ def get_safe_moves(possible_moves, body, board, squadMates=None, mySnake=None):
 #     return ans
 #
 #
-# def getAllMoves(coord):
-#     return [
-#         {'x': coord['x'], 'y': coord['y'] + 1},
-#         {'x': coord['x'], 'y': coord['y'] - 1},
-#         {'x': coord['x'] + 1, 'y': coord['y']},
-#         {'x': coord['x'] - 1, 'y': coord['y']}
-#     ]
-#
-#
-# def avoid_consumption(future_head, snakeBodies, mySnake):
-#     if len(snakeBodies) < 2:
-#         return True
-#     myLength = mySnake["length"]
-#     for snake in snakeBodies:
-#         if snake == mySnake:
-#             continue
-#         if future_head in getAllMoves(snake["head"]) and future_head not in snake["body"][1:-1] and myLength <= \
-#                 snake["length"]:
-#             return False
-#     return True
